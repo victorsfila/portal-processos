@@ -185,11 +185,10 @@ const card=(p,idx)=>{
   '</article>';
 };
 function blocoAndamento(p){
-  const a=A[p.num];
-  if(!a) return carregandoA?'<div class="andam carregando"><h3>Andamento</h3><p>Buscando andamento…</p></div>':'';
-  const tit=a.tipo==='resumo'?'Andamento (resumo automático'+(a.ultima?' · última movimentação '+a.ultima:'')+')':
-    a.tipo==='lista'?'Últimas movimentações':'Andamento';
-  return '<div class="andam'+(a.tipo==='vazio'||a.tipo==='erro'?' vazio':'')+'"><h3>'+esc(tit)+'</h3><p>'+esc(a.texto)+'</p></div>';
+  const t=String(p.andamento||'').trim();
+  if(!t) return '';
+  const vazio=/^Andamento não disponível/.test(t);
+  return '<div class="andam'+(vazio?' vazio':'')+'"><h3>Andamento'+(p.andamentoEm?' · atualizado em '+esc(p.andamentoEm):'')+'</h3><p>'+esc(t)+'</p></div>';
 }
 const ANDAMENTO_ATIVO=false; // desligado: o DataJud está recusando consultas vindas da Vercel
 async function carregarAndamentos(){
