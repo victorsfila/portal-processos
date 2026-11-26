@@ -13,7 +13,7 @@ const cache = new Map();
 async function buscar(url, opt, ms) {
   const t0 = Date.now();
   try {
-    const r = await buscar(url, Object.assign({}, opt, { signal: AbortSignal.timeout(ms || 9000) }));
+    const r = await fetch(url, Object.assign({}, opt, { signal: AbortSignal.timeout(ms || 9000) }));
     console.log('[andamento]', url.split('?')[0].slice(0, 80), r.status, (Date.now() - t0) + 'ms');
     return r;
   } catch (e) {
