@@ -115,10 +115,7 @@ module.exports = async (req, res) => {
     let texto = null;
     if (r.erro) { resultado.falhas++; }
     else if (!r.itens.length) {
-      // Justiça Eleitoral (J = 6) não publica no DJEN; criminal antes da citação costuma não ter publicação
-      texto = digitos(p.num).charAt(13) === '6'
-        ? 'Processo da Justiça Eleitoral: o andamento dele não aparece no diário oficial nacional, então acompanhe pelas observações do advogado.'
-        : 'Ainda não saiu nenhuma publicação oficial neste processo. Isso é normal no começo do processo; o advogado acompanha por aqui.';
+      // sem publicação no DJEN: não grava nada, para não apagar um resumo escrito à mão
       resultado.semDados++;
     }
     else { texto = (await resumoGemini(p, r.itens)) || r.itens.slice(0, 3).map(textoCom).join('\n'); resultado.ok++; }
