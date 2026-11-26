@@ -28,6 +28,15 @@
   "functions": {
     "api/andamento.js": {
       "maxDuration": 60
+    },
+    "api/atualizar.js": {
+      "maxDuration": 300
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/atualizar",
+      "schedule": "0 9 * * *"
+    }
+  ]
 }
