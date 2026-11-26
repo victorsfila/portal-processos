@@ -112,7 +112,13 @@ module.exports = async (req, res) => {
     const r = await comunicacoes(p.num);
     let texto = null;
     if (r.erro) { resultado.falhas++; }
-    else if (!r.itens.length) { texto = 'Ainda não há publicações oficiais deste processo (ou ele corre em segredo de justiça).'; resultado.semDados++; }
+    else if (!r.itens.length) {
+      // Justiça Eleitoral (J = 6) não publica no DJEN; criminal antes da citação costuma não ter publicação
+      texto = digitos(p.num).charAt(13) === '6'
+        ? 'Processo da Justiça Eleitoral: o andamento dele não aparece no diário oficial nacional, então acompanhe pelas observações do advogado.'
+        : 'Ainda não saiu nenhuma publicação oficial neste processo. Isso é normal no começo do processo; o advogado acompanha por aqui.';
+      resultado.semDados++;
+    }
     else { texto = (await resumoGemini(p, r.itens)) || r.itens.slice(0, 3).map(textoCom).join('\n'); resultado.ok++; }
     if (texto) await planilha({ acao: 'salvar', itens: [{ num: p.num, texto }] });
     await dormir(PAUSA_MS);
