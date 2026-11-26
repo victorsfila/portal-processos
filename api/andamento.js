@@ -9,6 +9,19 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
 const CACHE_MS = 6 * 60 * 60 * 1000;
 const cache = new Map();
 
+// fetch com limite de tempo, para nada ficar travado
+async function buscar(url, opt, ms) {
+  const t0 = Date.now();
+  try {
+    const r = await buscar(url, Object.assign({}, opt, { signal: AbortSignal.timeout(ms || 9000) }));
+    console.log('[andamento]', url.split('?')[0].slice(0, 80), r.status, (Date.now() - t0) + 'ms');
+    return r;
+  } catch (e) {
+    console.log('[andamento] falhou', url.split('?')[0].slice(0, 80), String(e), (Date.now() - t0) + 'ms');
+    throw e;
+  }
+}
+
 const UFS = ['ac','al','ap','am','ba','ce','df','es','go','ma','mt','ms','mg','pa','pb','pr','pe','pi','rj','rn','rs','ro','rr','sc','se','sp','to'];
 const digitos = s => String(s || '').replace(/\D/g, '');
 
@@ -33,11 +46,11 @@ function textoMov(m) {
 async function movimentos(numero) {
   const alias = aliasTribunal(numero);
   if (!alias) return { erro: true };
-  const r = await fetch('https://api-publica.datajud.cnj.jus.br/api_publica_' + alias + '/_search', {
+  const r = await buscar('https://api-publica.datajud.cnj.jus.br/api_publica_' + alias + '/_search', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: 'APIKey ' + DATAJUD_KEY },
     body: JSON.stringify({ query: { match: { numeroProcesso: digitos(numero) } }, size: 10 })
-  });
+  }, 9000);
   if (!r.ok) return { erro: true };
   const hits = ((await r.json()).hits || {}).hits || [];
   const movs = [];
@@ -62,11 +75,11 @@ async function resumoGemini(p, movs) {
     'Assunto do processo: ' + p.motivo + ' (' + p.area + ')\nÚltimas movimentações (mais recentes primeiro):\n' +
     movs.slice(0, 15).map(textoMov).join('\n');
   try {
-    const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent', {
+    const r = await buscar('https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': chave },
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-    });
+    }, 12000);
     if (!r.ok) return null;
     const j = await r.json();
     const partes = (((j.candidates || [])[0] || {}).content || {}).parts || [];
@@ -107,11 +120,11 @@ module.exports = async (req, res) => {
   if (!token) { res.statusCode = 401; return res.json({ erro: 'Sessão inválida.' }); }
   let d;
   try {
-    const r = await fetch(APPS_SCRIPT, {
+    const r = await buscar(APPS_SCRIPT, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ acao: 'atualizar', token })
-    });
+    }, 20000);
     d = await r.json();
   } catch (e) { res.statusCode = 502; return res.json({ erro: 'Planilha indisponível.' }); }
   if (!d || d.sessaoExpirada || d.erro) { res.statusCode = 401; return res.json({ erro: 'Sessão inválida.' }); }
