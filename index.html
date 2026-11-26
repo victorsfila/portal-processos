@@ -74,6 +74,10 @@ input:focus{border-color:var(--ink);outline:none}
 .status{font-weight:600;margin:0 0 10px}
 .tag{display:inline-block;font-size:12px;padding:2px 9px;border-radius:10px;background:var(--ink);color:var(--bg);margin-left:6px;vertical-align:2px}
 .link{font-size:14px;color:var(--ink);font-weight:600}
+.andam{margin:0 0 12px;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;max-width:560px}
+.andam h3{font-size:13px;font-weight:600;color:var(--mut);margin:0 0 4px}
+.andam p{margin:0;white-space:pre-line;font-size:15px}
+.andam.carregando p,.andam.vazio p{color:var(--mut);font-size:14px}
 .obs{background:var(--soft);border-left:4px solid var(--red);border-radius:0 10px 10px 0;padding:14px 16px;align-self:start}
 .obs h3{font-size:13px;font-weight:600;color:var(--mut);margin:0 0 6px}
 .obs p{margin:0;white-space:pre-line;overflow-wrap:anywhere}
@@ -148,7 +152,7 @@ async function api(body){
   return r.json();
 }
 
-let P=[],filtro='all',etapa=null,q='';
+let P=[],A={},carregandoA=false,filtro='all',etapa=null,q='';
 
 function mostrarLogin(texto){
   $('vApp').hidden=true;$('vLogin').hidden=false;$('msg').textContent=texto||'';
@@ -174,11 +178,28 @@ const card=(p,idx)=>{
       '<button class="copy" type="button" data-i="'+idx+'" aria-label="Copiar número do processo '+esc(p.num)+'">Copiar nº</button></div>'+
     '<div class="mini"><span class="fill" style="width:'+(Number(p.etapa)*20)+'%"></span>'+mini+'</div>'+
     '<p class="status">'+esc(p.estado)+(p.favoravel?'<span class="tag">Favorável</span>':'')+'</p>'+
+    blocoAndamento(p)+
     '<a class="link" href="'+esc(href)+'" target="_blank" rel="noopener noreferrer">Ver no site do tribunal</a>'+
   '</div>'+
   '<aside class="obs'+(obs?'':' vazia')+'"><h3>Observações</h3><p>'+(obs?esc(obs):'Sem observações no momento.')+'</p></aside>'+
   '</article>';
 };
+function blocoAndamento(p){
+  const a=A[p.num];
+  if(!a) return carregandoA?'<div class="andam carregando"><h3>Andamento</h3><p>Buscando andamento…</p></div>':'';
+  const tit=a.tipo==='resumo'?'Andamento (resumo automático'+(a.ultima?' · última movimentação '+a.ultima:'')+')':
+    a.tipo==='lista'?'Últimas movimentações':'Andamento';
+  return '<div class="andam'+(a.tipo==='vazio'||a.tipo==='erro'?' vazio':'')+'"><h3>'+esc(tit)+'</h3><p>'+esc(a.texto)+'</p></div>';
+}
+async function carregarAndamentos(){
+  const tk=store.get();if(!tk) return;
+  carregandoA=true;draw();
+  try{
+    const r=await fetch('/api/andamento',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:tk})});
+    if(r.ok){const j=await r.json();A=j.andamentos||{}}
+  }catch(e){}
+  carregandoA=false;draw();
+}
 let visiveis=[];
 function draw(){
   const t=q.toLowerCase();
@@ -209,7 +230,7 @@ $('fLogin').addEventListener('submit',async e=>{
   try{
     const d=await api({acao:'entrar',usuario:$('usuario').value,senha:$('senha').value});
     if(d.erro) return mostrarLogin(d.erro);
-    store.set(d.token);$('senha').value='';mostrarApp(d);
+    store.set(d.token);$('senha').value='';mostrarApp(d);carregarAndamentos();
   }catch(err){mostrarLogin('Não foi possível conectar. Verifique a internet e tente de novo.')}
 });
 async function atualizar(){
@@ -219,12 +240,12 @@ async function atualizar(){
     const d=await api({acao:'atualizar',token:tk});
     if(d.sessaoExpirada){store.set(null);return mostrarLogin('Sua sessão expirou. Entre de novo.')}
     if(d.erro) throw new Error(d.erro);
-    mostrarApp(d);
+    mostrarApp(d);carregarAndamentos();
   }catch(err){if($('vApp').hidden) mostrarLogin('Não foi possível conectar. Tente de novo.')}
   finally{$('bAtualizar').disabled=false;$('bAtualizar').textContent='Atualizar'}
 }
 $('bAtualizar').addEventListener('click',atualizar);
-$('bSair').addEventListener('click',()=>{const tk=store.get();store.set(null);P=[];mostrarLogin();if(tk) api({acao:'sair',token:tk}).catch(()=>{})});
+$('bSair').addEventListener('click',()=>{const tk=store.get();store.set(null);P=[];A={};mostrarLogin();if(tk) api({acao:'sair',token:tk}).catch(()=>{})});
 $('track').addEventListener('click',e=>{const b=e.target.closest('.st');if(!b)return;const i=+b.dataset.s;etapa=etapa===i?null:i;draw()});
 document.querySelectorAll('.chip').forEach(b=>b.addEventListener('click',()=>{filtro=b.dataset.f;document.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed',x===b));draw()}));
 $('q').addEventListener('input',e=>{q=e.target.value;draw()});
