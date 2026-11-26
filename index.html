@@ -164,7 +164,8 @@ function mostrarApp(d){
 
 const card=(p,idx)=>{
   const mini=ETAPAS.map((s,i)=>'<i class="'+(i<p.etapa?'done':'')+(i===p.etapa?' now':'')+'">'+esc(s)+'</i>').join('');
-  const href=/^https:\/\//.test(p.link)?p.link:'#';
+  let href=/^https:\/\//.test(p.link)?p.link:'#';
+  if(href.includes('eproc-consulta.tjsp.jus.br')) href='https://eproc-consulta.tjsp.jus.br/consulta_1g/externo_controlador.php?acao=tjsp@consulta_unificada_publica/consultar&num_processo='+String(p.num).replace(/\D/g,'');
   const obs=String(p.obs||'').trim();
   return '<article class="case"><div>'+
     '<p class="area">'+esc(p.area)+(p.papel?' · você é parte '+esc(p.papel):'')+'</p>'+
