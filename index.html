@@ -191,7 +191,9 @@ function blocoAndamento(p){
     a.tipo==='lista'?'Últimas movimentações':'Andamento';
   return '<div class="andam'+(a.tipo==='vazio'||a.tipo==='erro'?' vazio':'')+'"><h3>'+esc(tit)+'</h3><p>'+esc(a.texto)+'</p></div>';
 }
+const ANDAMENTO_ATIVO=false; // desligado: o DataJud está recusando consultas vindas da Vercel
 async function carregarAndamentos(){
+  if(!ANDAMENTO_ATIVO) return;
   const tk=store.get();if(!tk) return;
   carregandoA=true;draw();
   const falha={tipo:'erro',texto:'Não foi possível buscar o andamento agora. Toque em Atualizar para tentar de novo.'};
