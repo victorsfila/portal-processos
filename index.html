@@ -194,10 +194,12 @@ function blocoAndamento(p){
 async function carregarAndamentos(){
   const tk=store.get();if(!tk) return;
   carregandoA=true;draw();
+  const falha={tipo:'erro',texto:'Não foi possível buscar o andamento agora. Toque em Atualizar para tentar de novo.'};
   try{
-    const r=await fetch('/api/andamento',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:tk})});
+    const r=await fetch('/api/andamento',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:tk}),signal:AbortSignal.timeout(55000)});
     if(r.ok){const j=await r.json();A=j.andamentos||{}}
-  }catch(e){}
+    else{A={};P.forEach(p=>A[p.num]=falha)}
+  }catch(e){A={};P.forEach(p=>A[p.num]=falha)}
   carregandoA=false;draw();
 }
 let visiveis=[];
