@@ -109,6 +109,8 @@ module.exports = async (req, res) => {
   const resultado = { ok: 0, semDados: 0, falhas: 0, pulados: 0 };
   for (const p of lista) {
     if (Date.now() - inicio > LIMITE_TOTAL_MS) { resultado.pulados++; continue; }
+    // Justiça Eleitoral (J = 6) não publica no DJEN: o resumo desses é atualizado à mão e não pode ser apagado aqui
+    if (digitos(p.num).charAt(13) === '6') { resultado.pulados++; continue; }
     const r = await comunicacoes(p.num);
     let texto = null;
     if (r.erro) { resultado.falhas++; }
