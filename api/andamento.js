@@ -50,7 +50,7 @@ async function movimentos(numero) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: 'APIKey ' + DATAJUD_KEY },
     body: JSON.stringify({ query: { match: { numeroProcesso: digitos(numero) } }, size: 10 })
-  }, 9000);
+  }, 25000);
   if (!r.ok) return { erro: true };
   const hits = ((await r.json()).hits || {}).hits || [];
   const movs = [];
@@ -129,6 +129,10 @@ module.exports = async (req, res) => {
   } catch (e) { res.statusCode = 502; return res.json({ erro: 'Planilha indisponível.' }); }
   if (!d || d.sessaoExpirada || d.erro) { res.statusCode = 401; return res.json({ erro: 'Sessão inválida.' }); }
   const out = {};
-  await Promise.all((d.processos || []).map(async p => { out[p.num] = await andamento(p); }));
+  // consulta em grupos de 3 para não sobrecarregar o DataJud
+  const lista = d.processos || [];
+  for (let i = 0; i < lista.length; i += 3) {
+    await Promise.all(lista.slice(i, i + 3).map(async p => { out[p.num] = await andamento(p); }));
+  }
   res.json({ andamentos: out });
 };
