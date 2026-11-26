@@ -21,5 +21,13 @@
         }
       ]
     }
-  ]
+  ],
+  "regions": [
+    "gru1"
+  ],
+  "functions": {
+    "api/andamento.js": {
+      "maxDuration": 60
+    }
+  }
 }
