@@ -49,10 +49,17 @@ async function movimentos(numero) {
 async function resumoGemini(p, movs) {
   const chave = process.env.GEMINI_API_KEY;
   if (!chave) return null;
-  const prompt = 'Você escreve para a cliente de um escritório de advocacia, que já conhece o caso. ' +
-    'Com base nas últimas movimentações abaixo (mais recentes primeiro), escreva em português, em no máximo 3 frases curtas e sem juridiquês, ' +
-    'o que aconteceu por último e qual tende a ser o próximo passo. Não invente fatos que não estejam nas movimentações; se não der para saber, diga isso. ' +
-    'Responda só com o texto do resumo.\n\nProcesso: ' + p.motivo + ' (' + p.area + ')\nMovimentações:\n' +
+  const prompt = 'Você vai explicar o andamento de um processo para uma pessoa comum, que não é advogada e não conhece nenhum termo jurídico. ' +
+    'Ela já sabe do que o caso trata; quer entender o que aconteceu por último e o que deve acontecer agora.\n\n' +
+    'Regras obrigatórias:\n' +
+    '- Escreva em português do Brasil, como numa conversa simples por WhatsApp, em no máximo 3 frases curtas.\n' +
+    '- NÃO use juridiquês nem termos técnicos. Nunca escreva palavras como: autos, conclusos, juntada, petição, contestação, réplica, citação, intimação, despacho, decisão interlocutória, sentença, trânsito em julgado, prazo decorrido, certidão, MPE, parecer, mero expediente, polo passivo, representada.\n' +
+    '- Troque por palavras do dia a dia. Exemplos: "juntada de contestação" = "a defesa foi entregue"; "conclusos para decisão" = "o processo está com o juiz para ele decidir"; ' +
+    '"citação" = "aviso oficial de que existe o processo"; "intimação" = "aviso oficial do tribunal"; "decorrido prazo" = "acabou o tempo para alguém se manifestar"; "sentença" = "a decisão do juiz".\n' +
+    '- Não use siglas. Não cite números de processo, artigos de lei ou nomes de documentos.\n' +
+    '- Não invente nada que não esteja nas movimentações. Se não der para saber o próximo passo, diga que é preciso aguardar.\n' +
+    '- Responda só com o texto do resumo, sem título e sem marcadores.\n\n' +
+    'Assunto do processo: ' + p.motivo + ' (' + p.area + ')\nÚltimas movimentações (mais recentes primeiro):\n' +
     movs.slice(0, 15).map(textoMov).join('\n');
   try {
     const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent', {
